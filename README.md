@@ -26,7 +26,7 @@ The system is evaluated using a synthetic workload of 500 jobs across 5-fold cro
 
 ## How to Use
 
-1. Run `drl_runner_kfold.py` to train and test the PPO agent across 5 folds.
+1. Run `drl_runner.py` to train and test the PPO agent across 5 folds.
 2. Run `baseline_runner.py` to execute the baseline FIFO scheduler.
 3. Use `gen_all_charts_updated.py` to generate all result visualizations (stored in `/charts`).
 4. Optionally, run `drl_training_debug.py` for a quick debug-mode reward progression.
