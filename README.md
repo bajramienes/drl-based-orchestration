@@ -1,49 +1,61 @@
 # DRL-Based Job Orchestration Framework
-
-This repository contains the source code, dataset, and chart generation scripts for the study:
-
-**"Reinforcement Learning for Energy-Efficient Job Orchestration: A Lightweight Evaluation Framework"**
-
-## Overview
-
-The framework implements a Deep Reinforcement Learning (DRL) agent using Proximal Policy Optimization (PPO) for intelligent job orchestration in computing environments. The agent learns to optimize job scheduling based on CPU temperature, SLA violations, and migration overhead. A First-In-First-Out (FIFO) baseline scheduler is included for comparative analysis.
-
-The system is evaluated using a synthetic workload of 500 jobs across 5-fold cross-validation. All experiments were conducted on local physical infrastructure using software-based monitoring tools.
-
----
+This repository provides the code, dataset, and result generation scripts for the paper: **"Reinforcement Learning for Energy-Efficient Job Orchestration: A Lightweight Evaluation Framework"**
 
 ## Repository Structure
+- `baseline_runner.py` — FIFO baseline scheduler implementation  
+- `drl_runner.py` — PPO-based Deep Reinforcement Learning (DRL) orchestration framework  
+- `gen_charts.py` — Script to generate charts from experiment logs  
+- `workload.xlsx` — Synthetic workload dataset (500 jobs: arrival_time, duration, memory_mb)  
+- `logs/` — Execution logs for DRL folds and baseline runs (auto-generated)  
+- `charts_compact/` — Compact figures combining multiple plots into single files  
+- `baseline-log` / `drl-log` — Example log outputs from previous runs  
+- `README.md` — Project description and usage instructions
 
-- `workload.csv` — Synthetic dataset of 500 jobs (arrival time, duration, memory usage)
-- `drl_runner.py` — Main script for 5-fold PPO training and testing
-- `baseline_runner.py` — Baseline FIFO scheduler for comparison
-- `drl_training_debug.py` — Lightweight script for initial PPO reward curve visualization
-- `gen_all_charts_updated.py` — Chart generator for all figures in vector PDF format
-- `/logs/` — Experiment logs for DRL and baseline (automatically generated)
-- `/charts/` — All result charts used in the paper (automatically generated)
+## Requirements
+- Python 3.8+  
+- Dependencies:
+  ```
+  pandas
+  numpy
+  torch
+  matplotlib
+  seaborn
+  psutil
+  ```
+Install with:
+```bash
+pip install -r requirements.txt
+```
 
----
+## How to Run
+1) PPO orchestration (5-fold cross-validation):
+```bash
+python drl_runner.py
+```
+2) FIFO baseline:
+```bash
+python baseline_runner.py
+```
+3) Generate charts (PDF figures):
+```bash
+python gen_charts.py
+```
+Logs are written to `logs/` and figures to `charts_compact/`.
 
-## How to Use
+## Dataset
+The workload file (`workload.xlsx`) contains 500 synthetic jobs with the following columns:
+- `job_id` — unique identifier  
+- `arrival_time` — scaled arrival timestamp  
+- `duration` — execution time in seconds  
+- `memory_mb` — memory requested in MB  
+This dataset was used for all experiments in the paper.
 
-1. Run `drl_runner_kfold.py` to train and test the PPO agent across 5 folds.
-2. Run `baseline_runner.py` to execute the baseline FIFO scheduler.
-3. Use `gen_all_charts_updated.py` to generate all result visualizations (stored in `/charts`).
-4. Optionally, run `drl_training_debug.py` for a quick debug-mode reward progression.
-
-Ensure Python 3.8+ with dependencies: `pandas`, `numpy`, `torch`, `matplotlib`, `seaborn`, `psutil`.
-
----
-
-## License and Use
-
-This codebase and dataset are provided for academic and reproducibility purposes. Redistribution, modification, or commercial usage is not permitted without explicit written permission from the author(s).
-
----
+## License
+This code and dataset are provided for academic and reproducibility purposes. Redistribution, modification, or commercial use is not permitted without prior written permission from the authors.
 
 ## Contact
-
-**Enes Bajrami**  
+Enes Bajrami  
 PhD Candidate in Software Engineering and Artificial Intelligence  
-Faculty of Computer Science and Engineering, Ss. Cyril and Methodius University  
-Email: enes.bajrami@students.finki.ukim.mk
+Faculty of Computer Science and Engineering, Ss. Cyril and Methodius University
+Skopje, North Macedonia  
+enes.bajrami@students.finki.ukim.mk
