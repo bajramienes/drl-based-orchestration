@@ -1,217 +1,289 @@
+import os
+import glob
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
-import os
-import numpy as np
 
-log_dir = r"C:\Users\Enes\Desktop\Framework\logs"
-chart_dir = r"C:\Users\Enes\Desktop\Framework\charts"
-os.makedirs(chart_dir, exist_ok=True)
+# ----------------------------
+# Paths (edit if needed)
+# ----------------------------
+LOG_DIR    = r"C:\Users\Enes\Desktop\Framework\logs"
+CHART_DIR  = r"C:\Users\Enes\Desktop\Framework\charts_compact"
+os.makedirs(CHART_DIR, exist_ok=True)
 
-# === 1. Reward per Episode (All Folds) ===
-plt.figure()
-plotted = False
-for fold in range(1, 6):
-    path = f"{log_dir}\\rewards_fold_{fold}.csv"
-    if os.path.exists(path):
-        df = pd.read_csv(path)
-        if len(df) > 1:
-            plt.plot(df["episode"], df["reward"], label=f"Fold {fold}")
-            plotted = True
-if plotted:
-    plt.title("Total Reward per Episode (All Folds)")
-    plt.xlabel("Episode")
-    plt.ylabel("Reward")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig(f"{chart_dir}\\reward_all_folds.pdf", format="pdf")
-    plt.close()
+def _read_many(pattern):
+    files = sorted(glob.glob(os.path.join(LOG_DIR, pattern)))
+    dfs = []
+    for f in files:
+        try:
+            df = pd.read_csv(f)
+            df["_file"] = os.path.basename(f)
+            dfs.append(df)
+        except Exception as e:
+            print(f"Skipping {f}: {e}")
+    if not dfs:
+        return pd.DataFrame()
+    return pd.concat(dfs, ignore_index=True)
 
-# === 2–6. Lambda Components (Line Plots) ===
-for fold in range(1, 6):
-    path = f"{log_dir}\\lambda_components_fold_{fold}.csv"
-    if os.path.exists(path):
-        df = pd.read_csv(path)
-        if not df.empty:
-            plt.figure()
-            plt.plot(df["temp_component"], label="λ1 · Temperature")
-            plt.plot(df["sla_component"], label="λ2 · SLA Violations")
-            plt.plot(df["cost_component"], label="λ3 · Migration Cost")
-            plt.title(f"Lambda Components - Fold {fold}")
-            plt.xlabel("Step")
-            plt.ylabel("Component Value")
-            plt.legend()
-            plt.grid(True)
-            plt.tight_layout()
-            plt.savefig(f"{chart_dir}\\lambda_components_fold_{fold}.pdf", format="pdf")
-            plt.close()
-
-# === 7. Average Lambda Contributions ===
-temp_means, sla_means, cost_means = [], [], []
-for fold in range(1, 6):
-    path = f"{log_dir}\\lambda_components_fold_{fold}.csv"
-    if os.path.exists(path):
-        df = pd.read_csv(path)
-        if not df.empty:
-            temp_means.append(df["temp_component"].mean())
-            sla_means.append(df["sla_component"].mean())
-            cost_means.append(df["cost_component"].mean())
-
-if temp_means:
-    df_avg = pd.DataFrame({
-        "Fold": [f"Fold {i+1}" for i in range(len(temp_means))],
-        "λ1 · Temperature": temp_means,
-        "λ2 · SLA Violations": sla_means,
-        "λ3 · Migration Cost": cost_means
-    })
-    df_avg.set_index("Fold").plot(kind="bar", figsize=(8, 5))
-    plt.title("Average Lambda Component Contribution per Fold")
-    plt.ylabel("Mean Component Value")
-    plt.grid(axis='y')
-    plt.tight_layout()
-    plt.savefig(f"{chart_dir}\\lambda_mean_contributions.pdf", format="pdf")
-    plt.close()
-
-# === 8. Temperature Distribution (Histogram) ===
-temps = []
-for fold in range(1, 6):
-    path = f"{log_dir}\\drl_fold_{fold}_log.csv"
-    if os.path.exists(path):
-        df = pd.read_csv(path)
-        temps.extend(df["estimated_temp"])
-if temps:
+# ----------------------------
+# Fig. 1 — Training reward per episode (all folds, one plot)
+# ----------------------------
+def fig01_training_reward():
+    df = _read_many("train_rewards_fold_*.csv")
+    if df.empty:
+        print("No train_rewards_* files found.")
+        return
     plt.figure()
-    sns.histplot(temps, bins=30, kde=True, color="steelblue")
-    plt.title("Estimated CPU Temperature Distribution (DRL Agent)")
+    for name, g in df.groupby("_file"):
+        g = g.sort_values("episode")
+        label = name.replace("train_rewards_", "").replace(".csv","")  # e.g., fold_1
+        plt.plot(g["episode"], g["reward"], label=label)
+    plt.xlabel("Episode")
+    plt.ylabel("Total Reward")
+    plt.title("Training Reward per Episode (by fold)")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(CHART_DIR, "fig01_training_reward.pdf"))
+    plt.close()
+
+# ----------------------------
+# Fig. 2 — Lambda components, all folds in one 2x3 grid (a–e)
+# ----------------------------
+def fig02_lambda_components_grid():
+    files = sorted(glob.glob(os.path.join(LOG_DIR, "lambda_components_fold_*.csv")))
+    if not files:
+        print("No lambda_components_* files found.")
+        return
+    fig, axes = plt.subplots(2, 3, figsize=(10, 6), sharex=False, sharey=False)
+    axes = axes.flatten()
+    letters = ["(a)", "(b)", "(c)", "(d)", "(e)", "(f)"]
+    for idx, f in enumerate(files[:6]):  # we have 5 folds; 6th subplot stays empty
+        ax = axes[idx]
+        df = pd.read_csv(f)
+        x = np.arange(len(df))
+        ax.plot(x, df["temp_component"], label="1 · Temperature")
+        ax.plot(x, df["sla_component"],  label="2 · SLA Violations")
+        ax.plot(x, df["cost_component"], label="3 · Migration Cost")
+        fold_name = os.path.basename(f).replace(".csv","").replace("lambda_components_","")
+        ax.set_title(f"{letters[idx]} {fold_name.replace('_',' ').title()}", fontsize=10)
+        ax.set_xlabel("Step"); ax.set_ylabel("Component Value")
+        ax.legend(fontsize=8)
+    # Hide 6th if unused
+    if len(files) < 6:
+        axes[-1].axis("off")
+    fig.suptitle("Lambda Components per Fold", fontsize=12)
+    fig.tight_layout(rect=[0, 0, 1, 0.97])
+    fig.savefig(os.path.join(CHART_DIR, "fig02_lambda_components_grid.pdf"))
+    plt.close(fig)
+
+# ----------------------------
+# Fig. 3 — Mean lambda component per fold (single bar chart)
+# ----------------------------
+def fig03_lambda_means():
+    files = sorted(glob.glob(os.path.join(LOG_DIR, "lambda_components_fold_*.csv")))
+    if not files:
+        print("No lambda_components_* files found.")
+        return
+    rows = []
+    for f in files:
+        df = pd.read_csv(f)
+        rows.append({
+            "fold": os.path.basename(f).split("_")[-1].split(".")[0],
+            "temp": df["temp_component"].mean(),
+            "sla":  df["sla_component"].mean(),
+            "cost": df["cost_component"].mean()
+        })
+    mdf = pd.DataFrame(rows)
+    x = np.arange(len(mdf))
+    w = 0.25
+    plt.figure(figsize=(8, 4.8))
+    plt.bar(x - w, mdf["temp"], width=w, label="1 · Temperature")
+    plt.bar(x,       mdf["sla"], width=w, label="2 · SLA Violations")
+    plt.bar(x + w, mdf["cost"], width=w, label="3 · Migration Cost")
+    plt.xticks(x, [f"Fold {f}" for f in mdf["fold"]])
+    plt.ylabel("Mean Component Value")
+    plt.title("Average Lambda Component Contribution per Fold")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(CHART_DIR, "fig03_lambda_means.pdf"))
+    plt.close()
+
+# ----------------------------
+# Fig. 4 — DRL temperature histogram (smoothed)
+# ----------------------------
+def fig04_temp_hist():
+    df = _read_many("drl_fold_*_log.csv")
+    if df.empty:
+        print("No drl_fold_*_log files found.")
+        return
+    # Prefer smoothed temp if present; else fall back
+    temp_col = "estimated_temp_smoothed" if "estimated_temp_smoothed" in df.columns else \
+               ("estimated_temp" if "estimated_temp" in df.columns else None)
+    if temp_col is None:
+        print("No temperature column found in DRL logs.")
+        return
+    temps = df[temp_col].values
+    plt.figure()
+    plt.hist(temps, bins=30)
     plt.xlabel("Temperature (°C)")
     plt.ylabel("Job Count")
+    plt.title("Estimated CPU Temperature Distribution (DRL)")
     plt.tight_layout()
-    plt.savefig(f"{chart_dir}\\drl_temp_distribution.pdf", format="pdf")
+    plt.savefig(os.path.join(CHART_DIR, "fig04_temp_hist.pdf"))
     plt.close()
 
-# === 9. Execution Time Comparison (with error bars + improved labels) ===
-baseline = pd.read_csv(f"{log_dir}\\baseline_log.csv")
-baseline_total = baseline["duration_sec"].sum()
+# ----------------------------
+# Fig. 5 — Total execution time: Baseline vs DRL (DRL mean±std)
+# ----------------------------
+def fig05_exec_time():
+    # DRL totals per fold
+    drl_files = sorted(glob.glob(os.path.join(LOG_DIR, "drl_fold_*_log.csv")))
+    drl_totals = []
+    for f in drl_files:
+        d = pd.read_csv(f)
+        # Prefer elapsed_sec if logged; otherwise sum of duration_sec
+        col = "elapsed_sec" if "elapsed_sec" in d.columns else "duration_sec"
+        drl_totals.append(float(d[col].sum()))
+    if not drl_totals:
+        print("No DRL logs for exec time.")
+        return
+    drl_mean = float(np.mean(drl_totals))
+    drl_std  = float(np.std(drl_totals, ddof=1)) if len(drl_totals) > 1 else 0.0
 
-drl_durations = []
-for fold in range(1, 6):
-    path = f"{log_dir}\\drl_fold_{fold}_log.csv"
-    if os.path.exists(path):
-        df = pd.read_csv(path)
-        drl_durations.append(df["duration_sec"].sum())
+    # Baseline total
+    bpath = os.path.join(LOG_DIR, "baseline_log.csv")
+    if not os.path.exists(bpath):
+        print("baseline_log.csv not found.")
+        return
+    bdf = pd.read_csv(bpath)
+    b_col = "elapsed_sec" if "elapsed_sec" in bdf.columns else "duration_sec"
+    baseline_total = float(bdf[b_col].sum())
 
-drl_mean = np.mean(drl_durations)
-drl_std = np.std(drl_durations)
+    plt.figure()
+    plt.bar(["Baseline", "DRL (mean)"], [baseline_total, drl_mean], yerr=[0.0, drl_std], capsize=6)
+    plt.ylabel("Total Execution Time (s)")
+    plt.title("Total Execution Time: Baseline vs DRL (mean±std across folds)")
+    plt.tight_layout()
+    plt.savefig(os.path.join(CHART_DIR, "fig05_exec_time.pdf"))
+    plt.close()
 
-plt.figure()
-bars = plt.bar(["Baseline", "DRL (Avg)"], [baseline_total, drl_mean],
-               yerr=[0, drl_std], capsize=8, color=["gray", "green"])
-plt.title("Total Execution Time Comparison (with Std Dev)")
-plt.ylabel("Total Duration (s)")
-plt.grid(True, axis='y')
+# ----------------------------
+# Fig. 6 — Job-wise temperature line: Baseline vs DRL
+# ----------------------------
+def fig06_jobwise_temp():
+    drl = _read_many("drl_fold_*_log.csv")
+    bpath = os.path.join(LOG_DIR, "baseline_log.csv")
+    if drl.empty or not os.path.exists(bpath):
+        print("Missing logs for job-wise temperature plot.")
+        return
+    base = pd.read_csv(bpath)
+    # choose smoothed if present
+    d_col = "estimated_temp_smoothed" if "estimated_temp_smoothed" in drl.columns else "estimated_temp"
+    b_col = "estimated_temp_smoothed" if "estimated_temp_smoothed" in base.columns else "estimated_temp"
 
-for bar in bars:
-    height = bar.get_height()
-    plt.text(bar.get_x() + bar.get_width() / 2,
-             height + (0.03 * height),  # 3% above bar height
-             f"{int(height)}",
-             ha='center',
-             va='bottom',
-             fontsize=9,
-             fontweight='bold')
+    d = drl.sort_values(["job_id"]).reset_index(drop=True)
+    b = base.sort_values(["job_id"]).reset_index(drop=True)
+    n = min(len(d), len(b))
 
-plt.tight_layout()
-plt.savefig(f"{chart_dir}\\execution_time_comparison_with_std.pdf", format="pdf")
-plt.close()
+    plt.figure()
+    plt.plot(range(n), d[d_col].values[:n], label="DRL")
+    plt.plot(range(n), b[b_col].values[:n], label="Baseline")
+    plt.xlabel("Job Index (sorted by job_id)")
+    plt.ylabel("Temperature (°C)")
+    plt.title("Estimated CPU Temperature per Job: DRL vs Baseline")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(CHART_DIR, "fig06_jobwise_temp.pdf"))
+    plt.close()
 
-# === 10. Temperature Line Comparison ===
-baseline_temp = baseline["estimated_temp"].reset_index(drop=True)
-drl_temp = []
-for fold in range(1, 6):
-    path = f"{log_dir}\\drl_fold_{fold}_log.csv"
-    if os.path.exists(path):
-        df = pd.read_csv(path)
-        drl_temp.extend(df["estimated_temp"])
-drl_temp = pd.Series(drl_temp).reset_index(drop=True)
+# ----------------------------
+# Fig. 7 — Radar over 4 metrics with explicit normalization
+# ----------------------------
+def fig07_radar():
+    drl = _read_many("drl_fold_*_log.csv")
+    bpath = os.path.join(LOG_DIR, "baseline_log.csv")
+    if drl.empty or not os.path.exists(bpath):
+        print("Missing logs for radar.")
+        return
+    base = pd.read_csv(bpath)
 
-plt.figure()
-plt.plot(baseline_temp, label="Baseline", alpha=0.7)
-plt.plot(drl_temp, label="DRL", alpha=0.7)
-plt.title("Estimated CPU Temperature per Job: DRL vs Baseline")
-plt.xlabel("Job Index")
-plt.ylabel("Temperature (°C)")
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.savefig(f"{chart_dir}\\temp_comparison_line.pdf", format="pdf")
-plt.close()
+    # metric extraction
+    d_exec = []
+    for _, g in drl.groupby("_file"):
+        col = "elapsed_sec" if "elapsed_sec" in g.columns else "duration_sec"
+        d_exec.append(float(g[col].sum()))
+    exec_drl = float(np.mean(d_exec))
 
-# === 11. Radar Chart (with SLA check) ===
-metrics = ["Exec. Time", "Avg Temp", "SLA Violations", "CPU%"]
-baseline_vals = [
-    baseline["duration_sec"].sum(),
-    baseline["estimated_temp"].mean(),
-    baseline["sla_violation"].sum() if "sla_violation" in baseline.columns else 0,
-    baseline["cpu_percent"].mean()
-]
+    # choose temp columns
+    d_tcol = "estimated_temp_smoothed" if "estimated_temp_smoothed" in drl.columns else "estimated_temp"
+    b_tcol = "estimated_temp_smoothed" if "estimated_temp_smoothed" in base.columns else "estimated_temp"
 
-drl_vals = []
-drl_temp_all, drl_sla_all, drl_cpu_all = [], [], []
-for fold in range(1, 6):
-    df = pd.read_csv(f"{log_dir}\\drl_fold_{fold}_log.csv")
-    drl_temp_all.append(df["estimated_temp"].mean())
-    drl_sla_all.append(df["sla_violation"].sum())
-    drl_cpu_all.append(df["cpu_percent"].mean())
-drl_vals = [
-    np.mean(drl_durations),
-    np.mean(drl_temp_all),
-    np.sum(drl_sla_all),
-    np.mean(drl_cpu_all)
-]
+    metrics = {
+        "Baseline": {
+            "exec_time": float(base["elapsed_sec"].sum() if "elapsed_sec" in base.columns else base["duration_sec"].sum()),
+            "avg_temp":  float(base[b_tcol].mean()),
+            "sla":       float(base["sla_violation"].sum() if "sla_violation" in base.columns else 0.0),
+            "cpu_avg":   float(base["cpu_percent"].mean()) if "cpu_percent" in base.columns else 0.0
+        },
+        "DRL": {
+            "exec_time": exec_drl,
+            "avg_temp":  float(drl[d_tcol].mean()),
+            "sla":       float(drl["sla_violation"].sum() if "sla_violation" in drl.columns else 0.0),
+            "cpu_avg":   float(drl["cpu_percent"].mean()) if "cpu_percent" in drl.columns else 0.0
+        }
+    }
 
-baseline_vals = np.array(baseline_vals)
-drl_vals = np.array(drl_vals)
-vals_min = np.minimum(baseline_vals, drl_vals)
-vals_max = np.maximum(baseline_vals, drl_vals)
-baseline_norm = (baseline_vals - vals_min) / (vals_max - vals_min + 1e-6)
-drl_norm = (drl_vals - vals_min) / (vals_max - vals_min + 1e-6)
+    names = ["Baseline", "DRL"]
+    keys  = ["exec_time", "avg_temp", "sla", "cpu_avg"]
+    invert = {"exec_time": True, "avg_temp": True, "sla": True, "cpu_avg": False}
 
-labels = metrics
-angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False).tolist()
-baseline_plot = np.concatenate((baseline_norm, [baseline_norm[0]]))
-drl_plot = np.concatenate((drl_norm, [drl_norm[0]]))
-angles += angles[:1]
-
-fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
-ax.plot(angles, baseline_plot, label="Baseline", linestyle='--', marker='o')
-ax.plot(angles, drl_plot, label="DRL Proposed", linestyle='-', marker='o')
-ax.fill(angles, drl_plot, alpha=0.1)
-ax.set_thetagrids(np.degrees(angles[:-1]), labels)
-plt.title("Normalized Metric Comparison (Radar Chart)")
-plt.legend(loc="upper right")
-plt.tight_layout()
-plt.savefig(f"{chart_dir}\\radar_comparison.pdf", format="pdf")
-plt.close()
-
-# === 12. Reward Training Curve (Combined from rewards_all.csv) ===
-reward_all_path = f"{log_dir}\\rewards_all.csv"
-if os.path.exists(reward_all_path):
-    df_rewards_all = pd.read_csv(reward_all_path)
-    if not df_rewards_all.empty:
-        if "fold" in df_rewards_all.columns:
-            plt.figure(figsize=(8, 5))
-            sns.lineplot(data=df_rewards_all, x="episode", y="reward", hue="fold", marker='o')
-            plt.title("PPO Training Reward per Episode (All Folds)")
+    raw = {k: [metrics[n][k] for n in names] for k in keys}
+    # invert where lower is better
+    inv = {}
+    for k in keys:
+        if invert[k]:
+            mx = max(raw[k])
+            inv[k] = [mx - v for v in raw[k]]
         else:
-            plt.figure()
-            plt.plot(df_rewards_all["episode"], df_rewards_all["reward"], marker='o', linestyle='-', color='blue')
-            plt.title("PPO Training Reward per Episode")
-        plt.xlabel("Episode")
-        plt.ylabel("Total Reward")
-        plt.grid(True)
-        plt.tight_layout()
-        plt.savefig(f"{chart_dir}\\reward_training_curve.pdf", format="pdf")
-        plt.close()
+            inv[k] = raw[k]
+    # min-max normalize
+    norm = {}
+    for k in keys:
+        arr = np.array(inv[k], dtype=float)
+        mn, mx = arr.min(), arr.max()
+        norm[k] = [1.0, 1.0] if mx - mn < 1e-12 else list((arr - mn) / (mx - mn))
 
-print("All updated charts successfully generated in:", chart_dir)
+    labels = ["Exec. Time", "Avg Temp", "SLA Violations", "CPU%"]
+    angles = np.linspace(0, 2*np.pi, len(labels), endpoint=False).tolist()
+    angles += angles[:1]
+
+    def vals(idx):
+        v = [norm["exec_time"][idx], norm["avg_temp"][idx], norm["sla"][idx], norm["cpu_avg"][idx]]
+        return v + [v[0]]
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, polar=True)
+    ax.plot(angles, vals(0), label="Baseline")
+    ax.fill(angles, vals(0), alpha=0.1)
+    ax.plot(angles, vals(1), label="DRL Proposed")
+    ax.fill(angles, vals(1), alpha=0.1)
+    ax.set_xticks(angles[:-1]); ax.set_xticklabels(labels)
+    ax.set_yticklabels([])
+    ax.set_title("Normalized Metric Comparison (Radar)")
+    ax.legend(loc="upper right", bbox_to_anchor=(1.2, 1.1))
+    plt.tight_layout()
+    plt.savefig(os.path.join(CHART_DIR, "fig07_radar.pdf"))
+    plt.close()
+
+def main():
+    fig01_training_reward()
+    fig02_lambda_components_grid()
+    fig03_lambda_means()
+    fig04_temp_hist()
+    fig05_exec_time()
+    fig06_jobwise_temp()
+    fig07_radar()
+    print(f"Done. Charts saved in: {CHART_DIR}")
+
+if __name__ == "__main__":
+    main()

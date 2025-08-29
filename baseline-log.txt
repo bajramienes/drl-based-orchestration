@@ -1,0 +1,28 @@
+Python 3.13.0 (tags/v3.13.0:60403a5, Oct  7 2024, 09:38:07) [MSC v.1941 64 bit (AMD64)] on win32
+Type "help", "copyright", "credits" or "license()" for more information.
+>>> 
+========== RESTART: C:\Users\Enes\Desktop\Framework\baseline_runner.py =========
+Starting BASELINE (FIFO) test...
+
+[BASELINE] Completed job 25/500 (elapsed 0.02s, temp_s 49.2°C, SLA 0)
+[BASELINE] Completed job 50/500 (elapsed 0.01s, temp_s 44.5°C, SLA 0)
+[BASELINE] Completed job 75/500 (elapsed 0.01s, temp_s 40.8°C, SLA 0)
+[BASELINE] Completed job 100/500 (elapsed 0.01s, temp_s 40.7°C, SLA 0)
+[BASELINE] Completed job 125/500 (elapsed 0.01s, temp_s 40.1°C, SLA 0)
+[BASELINE] Completed job 150/500 (elapsed 0.01s, temp_s 40.6°C, SLA 0)
+[BASELINE] Completed job 175/500 (elapsed 0.02s, temp_s 40.5°C, SLA 0)
+[BASELINE] Completed job 200/500 (elapsed 0.01s, temp_s 44.0°C, SLA 0)
+[BASELINE] Completed job 225/500 (elapsed 0.02s, temp_s 64.8°C, SLA 0)
+[BASELINE] Completed job 250/500 (elapsed 0.02s, temp_s 81.1°C, SLA 0)
+[BASELINE] Completed job 275/500 (elapsed 0.01s, temp_s 52.4°C, SLA 0)
+[BASELINE] Completed job 300/500 (elapsed 0.01s, temp_s 46.8°C, SLA 0)
+[BASELINE] Completed job 325/500 (elapsed 0.02s, temp_s 66.2°C, SLA 0)
+[BASELINE] Completed job 350/500 (elapsed 0.02s, temp_s 42.4°C, SLA 0)
+[BASELINE] Completed job 375/500 (elapsed 0.01s, temp_s 40.1°C, SLA 0)
+[BASELINE] Completed job 400/500 (elapsed 0.02s, temp_s 40.5°C, SLA 0)
+[BASELINE] Completed job 425/500 (elapsed 0.02s, temp_s 40.3°C, SLA 0)
+[BASELINE] Completed job 450/500 (elapsed 0.01s, temp_s 41.3°C, SLA 0)
+[BASELINE] Completed job 475/500 (elapsed 0.01s, temp_s 40.0°C, SLA 0)
+[BASELINE] Completed job 500/500 (elapsed 0.01s, temp_s 41.8°C, SLA 0)
+
+Baseline complete. Logs saved to logs/baseline_log.csv.

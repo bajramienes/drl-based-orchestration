@@ -1,0 +1,19 @@
+Python 3.13.0 (tags/v3.13.0:60403a5, Oct  7 2024, 09:38:07) [MSC v.1941 64 bit (AMD64)] on win32
+Type "help", "copyright", "credits" or "license()" for more information.
+>>> 
+============ RESTART: C:\Users\Enes\Desktop\Framework\drl_runner.py ============
+
+=== Testing Fold 1/5 ===
+Fold 1 complete. Logs saved: drl_fold_1_log.csv, lambda_components_fold_1.csv, train_rewards_fold_1.csv, test_rewards_fold_1.csv
+
+=== Testing Fold 2/5 ===
+Fold 2 complete. Logs saved: drl_fold_2_log.csv, lambda_components_fold_2.csv, train_rewards_fold_2.csv, test_rewards_fold_2.csv
+
+=== Testing Fold 3/5 ===
+Fold 3 complete. Logs saved: drl_fold_3_log.csv, lambda_components_fold_3.csv, train_rewards_fold_3.csv, test_rewards_fold_3.csv
+
+=== Testing Fold 4/5 ===
+Fold 4 complete. Logs saved: drl_fold_4_log.csv, lambda_components_fold_4.csv, train_rewards_fold_4.csv, test_rewards_fold_4.csv
+
+=== Testing Fold 5/5 ===
+Fold 5 complete. Logs saved: drl_fold_5_log.csv, lambda_components_fold_5.csv, train_rewards_fold_5.csv, test_rewards_fold_5.csv
