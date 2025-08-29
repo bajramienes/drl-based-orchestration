@@ -56,6 +56,6 @@ This code and dataset are provided for academic and reproducibility purposes. Re
 ## Contact
 Enes Bajrami  
 PhD Candidate in Software Engineering and Artificial Intelligence  
-Faculty of Computer Science and Engineering, Ss. Cyril and Methodius University
+Faculty of Computer Science and Engineering, Ss. Cyril and Methodius University,
 Skopje, North Macedonia  
 enes.bajrami@students.finki.ukim.mk
