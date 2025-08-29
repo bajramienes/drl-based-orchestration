@@ -1,0 +1,32 @@
+# Python cache and virtual envs
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+env/
+venv/
+.ipynb_checkpoints/
+
+# Logs and outputs
+logs/
+charts/
+charts_compact/
+baseline-log/
+drl-log/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# LaTeX artifacts (if paper sources included)
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+
+# Large binaries (optional: keep figures tracked if needed)
+*.tmp
